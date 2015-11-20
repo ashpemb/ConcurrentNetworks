@@ -24,9 +24,9 @@ namespace SimpleServerCS
         {
             ID = Guid.NewGuid().ToString();
             Socket = socket;
-            NetworkStream stream = new NetworkStream(socket, true);
-            StreamReader reader = new StreamReader(stream, Encoding.UTF8);
-            StreamWriter writer = new StreamWriter(stream, Encoding.UTF8);
+            stream = new NetworkStream(socket, true);
+            reader = new StreamReader(stream, Encoding.UTF8);
+            writer = new StreamWriter(stream, Encoding.UTF8);
         }
 
         
@@ -40,6 +40,7 @@ namespace SimpleServerCS
         public void SendText(string receivedMessage)
         {
             writer.WriteLine(receivedMessage);
+            writer.Flush();
         }
 
         public void Stop()

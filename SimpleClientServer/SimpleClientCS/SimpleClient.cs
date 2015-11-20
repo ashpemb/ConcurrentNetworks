@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 
 namespace SimpleClient
 {
@@ -55,16 +56,14 @@ namespace SimpleClient
             {
                 string userInput;
 
-                ProcessServerResponse();
-
+                Thread thread = new Thread( new ThreadStart(ProcessServerResponse));
+                thread.Start();
                 Console.Write("Enter the data to be sent: ");
 
                 while ((userInput = Console.ReadLine()) != null)
                 {
                     _writer.WriteLine(userInput);
                     _writer.Flush();
-
-                    ProcessServerResponse();
 
                     if (userInput.Equals("9"))
                         break;
@@ -85,9 +84,11 @@ namespace SimpleClient
 
         private void ProcessServerResponse()
         {
-            Console.Write("Server says: ");
-            Console.WriteLine(_reader.ReadLine());
+            while (true)
+            { 
+            Console.WriteLine("Server sys: " + _reader.ReadLine());
             Console.WriteLine();
+        }
         }
     }
 }
