@@ -28,35 +28,45 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.textBox1 = new System.Windows.Forms.TextBox();
-            this.button1 = new System.Windows.Forms.Button();
+            this.MessageText = new System.Windows.Forms.TextBox();
+            this.SendButton = new System.Windows.Forms.Button();
+            this.recievedMessages = new System.Windows.Forms.RichTextBox();
             this.SuspendLayout();
             // 
-            // textBox1
+            // MessageText
             // 
-            this.textBox1.Location = new System.Drawing.Point(164, 60);
-            this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(278, 22);
-            this.textBox1.TabIndex = 0;
-            this.textBox1.TextChanged += new System.EventHandler(this.textBox1_TextChanged);
+            this.MessageText.Location = new System.Drawing.Point(186, 199);
+            this.MessageText.Name = "MessageText";
+            this.MessageText.Size = new System.Drawing.Size(278, 22);
+            this.MessageText.TabIndex = 0;
+            this.MessageText.TextChanged += new System.EventHandler(this.textBox1_TextChanged);
             // 
-            // button1
+            // SendButton
             // 
-            this.button1.Location = new System.Drawing.Point(232, 252);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(187, 63);
-            this.button1.TabIndex = 1;
-            this.button1.Text = "button1";
-            this.button1.UseVisualStyleBackColor = true;
-            this.button1.Click += new System.EventHandler(this.button1_Click);
+            this.SendButton.Location = new System.Drawing.Point(232, 252);
+            this.SendButton.Name = "SendButton";
+            this.SendButton.Size = new System.Drawing.Size(187, 63);
+            this.SendButton.TabIndex = 1;
+            this.SendButton.Text = "Send Message";
+            this.SendButton.UseVisualStyleBackColor = true;
+            this.SendButton.Click += new System.EventHandler(this.SendButton_Click);
+            // 
+            // recievedMessages
+            // 
+            this.recievedMessages.Location = new System.Drawing.Point(176, 29);
+            this.recievedMessages.Name = "recievedMessages";
+            this.recievedMessages.Size = new System.Drawing.Size(288, 115);
+            this.recievedMessages.TabIndex = 2;
+            this.recievedMessages.Text = "";
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(642, 402);
-            this.Controls.Add(this.button1);
-            this.Controls.Add(this.textBox1);
+            this.Controls.Add(this.recievedMessages);
+            this.Controls.Add(this.SendButton);
+            this.Controls.Add(this.MessageText);
             this.Name = "Form1";
             this.Text = "Form1";
             this.Load += new System.EventHandler(this.Form1_Load);
@@ -67,8 +77,9 @@
 
         #endregion
 
-        private System.Windows.Forms.TextBox textBox1;
-        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.TextBox MessageText;
+        private System.Windows.Forms.Button SendButton;
+        private System.Windows.Forms.RichTextBox recievedMessages;
     }
 }
 

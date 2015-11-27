@@ -31,11 +31,13 @@ namespace WindowsFormsApplication1
             private NetworkStream _stream;
             private StreamWriter _writer;
             private StreamReader _reader;
+            private String message;
 
             public Form1()
             {
                 InitializeComponent();
                 _tcpClient = new TcpClient();
+                
             }
 
             public bool Connect(string hostname, int port)
@@ -49,7 +51,7 @@ namespace WindowsFormsApplication1
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("Exception: " + e.Message);
+                    recievedMessages.Text = ("Exception: " + e.Message + '\n');
                     return false;
                 }
 
@@ -63,40 +65,35 @@ namespace WindowsFormsApplication1
 
                 try
                 {
-                    string userInput;
 
                     Thread thread = new Thread(new ThreadStart(ProcessServerResponse));
                     thread.Start();
-                    Console.Write("Enter the data to be sent: ");
+                    recievedMessages.Text = ("Enter the data to be sent: " + '\n');
 
-                    while ((userInput = Console.ReadLine()) != null)
+                    while (message != null)
                     {
-                        _writer.WriteLine(userInput);
+                        _writer.WriteLine(message);
                         _writer.Flush();
 
-                        if (userInput.Equals("9"))
-                            break;
-
-                        Console.Write("Enter the data to be sent: ");
+                        recievedMessages.Text = ("Enter the data to be sent: " + '\n');
                     }
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("Unexpected Error: " + e.Message);
+                    recievedMessages.Text = ("Unexpected Error: " + e.Message + '\n');
                 }
                 finally
                 {
                     _tcpClient.Close();
                 }
-                Console.Read();
             }
 
             private void ProcessServerResponse()
             {
                 while (true)
                 {
-                    Console.WriteLine("Server sys: " + _reader.ReadLine());
-                    Console.WriteLine();
+                    recievedMessages.Text = ("Server sys: " + _reader.ReadLine() + '\n');
+                    recievedMessages.Text = ("" + '\n');
                 }
             }
 
@@ -110,9 +107,10 @@ namespace WindowsFormsApplication1
 
             }
 
-            private void button1_Click(object sender, EventArgs e)
+            private void SendButton_Click(object sender, EventArgs e)
             {
-
+                message = MessageText.Text;
+                MessageText.Text = String.Empty;
             }
         }
     
