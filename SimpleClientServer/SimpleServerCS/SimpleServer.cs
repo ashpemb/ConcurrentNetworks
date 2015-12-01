@@ -11,7 +11,7 @@ namespace SimpleServerCS
     class SimpleServer
     {
         TcpListener _tcpListener;
-        static List<Client> _clients = new List<Client>();
+        static List<Client> clients = new List<Client>();
 
         public SimpleServer(string ipAddress, int port)
         {
@@ -24,22 +24,25 @@ namespace SimpleServerCS
             _tcpListener.Start();
             
             Console.WriteLine("Listening...");
-            while(true)
-            { 
+
+            while (true)
+            {
                 Socket socket = _tcpListener.AcceptSocket();
-                Console.WriteLine("Connection Made");
                 Client client = new Client(socket);
-                _clients.Add(client);
+                clients.Add(client);
                 client.Start();
             }
+            
         }
 
         public void Stop()
         {
-            foreach(Client client in _clients)
+            foreach (Client c in clients)
             {
-                _tcpListener.Stop();
+                c.Stop();
             }
+
+            _tcpListener.Stop();
         }
 
         public static void SocketMethod(Client client)
@@ -49,16 +52,18 @@ namespace SimpleServerCS
                 Socket socket = client.Socket;
 
                 string receivedMessage;
-               
+                NetworkStream stream = client.Stream;
+                StreamReader reader = client.Reader;
 
-                client.writer.WriteLine("Send 0 for available options");
-                client.writer.Flush();
+                client.SendText(client, "Successfully Connected");
 
-                while ((receivedMessage = client.reader.ReadLine()) != null)
+                while ((receivedMessage = reader.ReadLine()) != null)
                 {
-                    foreach (Client c in _clients)
+                    Console.WriteLine("[" + client.ID.GetHashCode().ToString() + "] " + receivedMessage);
+
+                    foreach(Client c in clients)
                     {
-                        c.SendText(receivedMessage);
+                        c.SendText(client, receivedMessage);
                     }
                 }
             }
@@ -71,6 +76,5 @@ namespace SimpleServerCS
                 client.Stop();
             }
         }
-
     }
 }

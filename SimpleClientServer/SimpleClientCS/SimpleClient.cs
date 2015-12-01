@@ -56,9 +56,10 @@ namespace SimpleClient
             {
                 string userInput;
 
-                Thread thread = new Thread( new ThreadStart(ProcessServerResponse));
-                thread.Start();
                 Console.Write("Enter the data to be sent: ");
+
+                Thread thread = new Thread(new ThreadStart(ProcessServerResponse));
+                thread.Start();
 
                 while ((userInput = Console.ReadLine()) != null)
                 {
@@ -70,6 +71,8 @@ namespace SimpleClient
 
                     Console.Write("Enter the data to be sent: ");
                 }
+
+                thread.Abort();
             }
             catch (Exception e)
             {
@@ -79,16 +82,15 @@ namespace SimpleClient
             {
                 _tcpClient.Close();
             }
-            Console.Read();
          }
 
         private void ProcessServerResponse()
         {
             while (true)
-            { 
-            Console.WriteLine("Server sys: " + _reader.ReadLine());
-            Console.WriteLine();
-        }
+            {
+                Console.WriteLine(_reader.ReadLine());
+                Console.WriteLine();
+            }
         }
     }
 }
