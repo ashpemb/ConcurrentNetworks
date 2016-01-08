@@ -1,8 +1,10 @@
-﻿using System;
+﻿using Packets;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -81,5 +83,33 @@ namespace ChatClient
         {
             _form.Invoke(new AppendTextDelegate(_form.AppendText), new object[] { text });
         }
+
+        public void SendPacket(Packet data)
+        {
+            MemoryStream mem = new MemoryStream();
+            BinaryFormatter bf = new BinaryFormatter();
+            bf.Serialize(mem, data);
+            byte[] buffer = mem.GetBuffer();
+
+            _writer.Write(buffer.Length);
+            _writer.Write(buffer);
+            _writer.Flush();
+        }
+
+        public void SendText(string text)
+        {
+            if (!_tcpClient.Connected)
+                return;
+
+            ChatMessagePacket chatMessagePacket = new ChatMessagePacket(text);
+            SendPacket(chatMessagePacket);
+        }
+
+        private void SetNickname(string nickname)
+        {
+            NicknamePacket chatMessagePacket = new NicknamePacket(nickname);
+            SendPacket(chatMessagePacket);
+        }
+
     }
 }

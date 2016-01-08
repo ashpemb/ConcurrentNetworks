@@ -1,9 +1,11 @@
-﻿using System;
+﻿using Packets;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 
 namespace SimpleServerCS
@@ -32,7 +34,7 @@ namespace SimpleServerCS
                 clients.Add(client);
                 client.Start();
             }
-            
+
         }
 
         public void Stop()
@@ -43,6 +45,19 @@ namespace SimpleServerCS
             }
 
             _tcpListener.Stop();
+        }
+
+        public void SendPacket(Packet data, NetworkStream stream)
+        {
+            StreamWriter _writer = new StreamWriter(stream, Encoding.UTF8);
+            MemoryStream mem = new MemoryStream();
+            BinaryFormatter bf = new BinaryFormatter();
+            bf.Serialize(mem, data);
+            byte[] buffer = mem.GetBuffer();
+
+            _writer.Write(buffer.Length);
+            _writer.Write(buffer);
+            _writer.Flush();
         }
 
         public static void SocketMethod(Client client)
