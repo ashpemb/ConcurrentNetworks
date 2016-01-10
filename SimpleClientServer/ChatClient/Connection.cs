@@ -18,6 +18,9 @@ namespace ChatClient
         private NetworkStream _stream;
         private StreamWriter _writer;
         private StreamReader _reader;
+        private BinaryWriter bWriter;
+        private BinaryReader bReader;
+        private BinaryFormatter formatter;
         private Thread _thread;
         public bool Connect(Form1 form, string hostname, int port)
         {
@@ -29,6 +32,9 @@ namespace ChatClient
                 _stream = _tcpClient.GetStream();
                 _writer = new StreamWriter(_stream, Encoding.UTF8);
                 _reader = new StreamReader(_stream, Encoding.UTF8);
+                bWriter = new BinaryWriter(_stream, Encoding.UTF8);
+                bReader = new BinaryReader(_stream, Encoding.UTF8);
+                formatter = new BinaryFormatter();
 
                 _thread = new Thread(new ThreadStart(ProcessServerResponse));
                 _thread.Start();
@@ -50,18 +56,13 @@ namespace ChatClient
                 _writer.Close();
                 _tcpClient.Close();
                 _thread.Abort();
+                bReader.Close();
+                bWriter.Close();
+                
             }
             catch {}
 
             OutputText("Disconnected");
-        }
-        public void SendText(string text)
-        {
-            if (!_tcpClient.Connected)
-                return;
-
-            _writer.WriteLine(text);
-            _writer.Flush();
         }
 
         private void ProcessServerResponse()
@@ -70,9 +71,23 @@ namespace ChatClient
             {
                 while (_tcpClient.Connected)
                 {
-                    string text = _reader.ReadLine();
-                    if (text.Length > 0)
-                        OutputText(text);
+                    int noOfIncomingBytes;
+                    while ((noOfIncomingBytes = bReader.ReadInt32()) != 0)
+                    {
+                        byte[] bytes = bReader.ReadBytes(noOfIncomingBytes);
+                        MemoryStream memoryStream = new MemoryStream(bytes);
+                        Packet packet = formatter.Deserialize(memoryStream) as Packet;
+                        switch (packet.type)
+                        {
+                                case PacketType.CHATMESSAGE: 
+                                string message = ((ChatMessagePacket)packet).chatMessage;
+
+                                OutputText(message);
+                                   
+                                
+                                break;
+                        }
+                    }
                 }
             }
             catch { }
@@ -84,31 +99,29 @@ namespace ChatClient
             _form.Invoke(new AppendTextDelegate(_form.AppendText), new object[] { text });
         }
 
-        public void SendPacket(Packet data)
+        public void Send(Packet data)
         {
             MemoryStream mem = new MemoryStream();
             BinaryFormatter bf = new BinaryFormatter();
             bf.Serialize(mem, data);
             byte[] buffer = mem.GetBuffer();
 
-            _writer.Write(buffer.Length);
-            _writer.Write(buffer);
-            _writer.Flush();
+            bWriter.Write(buffer.Length);
+            bWriter.Write(buffer);
+            bWriter.Flush();
         }
 
-        public void SendText(string text)
+        public void SendTextPacket(string text)
         {
-            if (!_tcpClient.Connected)
-                return;
 
             ChatMessagePacket chatMessagePacket = new ChatMessagePacket(text);
-            SendPacket(chatMessagePacket);
+            Send(chatMessagePacket);
         }
 
         private void SetNickname(string nickname)
         {
             NicknamePacket chatMessagePacket = new NicknamePacket(nickname);
-            SendPacket(chatMessagePacket);
+            Send(chatMessagePacket);
         }
 
     }

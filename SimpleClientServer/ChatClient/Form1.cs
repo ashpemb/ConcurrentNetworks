@@ -17,6 +17,7 @@ namespace ChatClient
     {
         private bool connected = false;
         private Connection connection = null;
+        private string text;
         public Form1(Connection connection)
         {
             InitializeComponent();
@@ -49,10 +50,11 @@ namespace ChatClient
         {
             if (!connected)
                 return;
-
-            connection.SendText(textBox1.Text);
+            text = textBox1.Text;
+            connection.SendTextPacket(text);
             textBox1.Text = "";
         }
+
 
 
     }

@@ -47,18 +47,7 @@ namespace SimpleServerCS
             _tcpListener.Stop();
         }
 
-        public void SendPacket(Packet data, NetworkStream stream)
-        {
-            StreamWriter _writer = new StreamWriter(stream, Encoding.UTF8);
-            MemoryStream mem = new MemoryStream();
-            BinaryFormatter bf = new BinaryFormatter();
-            bf.Serialize(mem, data);
-            byte[] buffer = mem.GetBuffer();
 
-            _writer.Write(buffer.Length);
-            _writer.Write(buffer);
-            _writer.Flush();
-        }
 
         public static void SocketMethod(Client client)
         {
@@ -66,21 +55,34 @@ namespace SimpleServerCS
             {
                 Socket socket = client.Socket;
 
-                string receivedMessage;
                 NetworkStream stream = client.Stream;
                 StreamReader reader = client.Reader;
+                BinaryReader bReader = client.bReader;
+                BinaryFormatter formatter = client.formatter;
 
-                client.SendText(client, "Successfully Connected");
+                client.SendTextPacket("Successfully Connected");
 
-                while ((receivedMessage = reader.ReadLine()) != null)
-                {
-                    Console.WriteLine("[" + client.ID.GetHashCode().ToString() + "] " + receivedMessage);
-
-                    foreach(Client c in clients)
+                int noOfIncomingBytes;
+                    while ((noOfIncomingBytes = bReader.ReadInt32()) != 0)
                     {
-                        c.SendText(client, receivedMessage);
+                        byte[] bytes = bReader.ReadBytes(noOfIncomingBytes);
+                        MemoryStream memoryStream = new MemoryStream(bytes);
+                        Packet packet = formatter.Deserialize(memoryStream) as Packet;
+                        switch (packet.type)
+                        {
+                                case PacketType.CHATMESSAGE: 
+                                string message = ((ChatMessagePacket) packet).chatMessage;
+                                Console.WriteLine(message);
+                                foreach (Client c in clients)
+                                {
+                                    if (c != null)
+                                    {
+                                        c.SendTextPacket(message);
+                                    }
+                                }
+                                break;
+                        }
                     }
-                }
             }
             catch (Exception e)
             {
