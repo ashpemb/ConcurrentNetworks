@@ -12,8 +12,17 @@ namespace Packets
         EMPTY,
         NICKNAME,
         CHATMESSAGE,
+        IDPACKET,
+        CLIENTLIST,
+        SYSTEM,
     }
 
+    public enum SystemType
+    {
+        EMPTY,
+        CONNECTED,
+        DISCONNECTED,
+    }
 
     [Serializable]
     public class Packet
@@ -36,11 +45,53 @@ namespace Packets
     public class ChatMessagePacket : Packet 
     {
         public string chatMessage = String.Empty;
-
-        public ChatMessagePacket(string message)
+        public string sender = String.Empty;
+        public ChatMessagePacket(string message, string sender)
         {
             this.type = PacketType.CHATMESSAGE;
             this.chatMessage = message;
+            this.sender = sender;
+        }
+    }
+
+    [Serializable]
+    public class IDPacket : Packet
+    {
+        public string ID = String.Empty;
+        public IDPacket(string ID)
+        {
+
+            this.type = PacketType.IDPACKET;
+            this.ID = ID;
+        }
+    }
+
+    [Serializable]
+    public class ClientList : Packet
+    {
+        public string[] clients = null;
+
+        public ClientList(string[] clients)
+        {
+            this.type = PacketType.CLIENTLIST;
+            this.clients = clients;
+        }
+    }
+
+    [Serializable]
+    public class SysPacket : Packet
+    {
+        public string sender = string.Empty;
+        public string message = string.Empty;
+
+        public SystemType sysType = SystemType.EMPTY;
+
+        public SysPacket(string sender, string message, SystemType type)
+        {
+            this.type = PacketType.SYSTEM;
+            this.sender = sender;
+            this.message = message;
+            this.sysType = type;
         }
     }
 }

@@ -14,91 +14,136 @@ namespace ChatClient
     public class Connection
     {
         private Form1 _form;
+
         private TcpClient _tcpClient;
         private NetworkStream _stream;
-        private StreamWriter _writer;
-        private StreamReader _reader;
-        private BinaryWriter bWriter;
-        private BinaryReader bReader;
-        private BinaryFormatter formatter;
+        private BinaryWriter _writer;
+        private BinaryReader _reader;
+        private string name;
         private Thread _thread;
+
+        private delegate void RecieveMessageDelegate(string str);
+        private delegate void RecieveClientListDelegate(string[] clients);
+
+        //----------------------------------------------------------------------------------
         public bool Connect(Form1 form, string hostname, int port)
         {
             try
             {
                 _form = form;
+
                 _tcpClient = new TcpClient();
                 _tcpClient.Connect(hostname, port);
+
                 _stream = _tcpClient.GetStream();
-                _writer = new StreamWriter(_stream, Encoding.UTF8);
-                _reader = new StreamReader(_stream, Encoding.UTF8);
-                bWriter = new BinaryWriter(_stream, Encoding.UTF8);
-                bReader = new BinaryReader(_stream, Encoding.UTF8);
-                formatter = new BinaryFormatter();
+                _writer = new BinaryWriter(_stream, Encoding.UTF8);
+                _reader = new BinaryReader(_stream, Encoding.UTF8);
 
                 _thread = new Thread(new ThreadStart(ProcessServerResponse));
                 _thread.Start();
+
+                NicknamePacket nickNamePacket = new NicknamePacket("Bill");
+                Send(nickNamePacket);
             }
             catch (Exception e)
             {
-                OutputText("Exception: " + e.Message);
+                _form.Invoke(new RecieveMessageDelegate(_form.AppendText), new object[] { "Exception: " + e.Message });
                 return false;
             }
 
             return true;
         }
 
+        public bool Reconnect(string hostname, int port)
+        {
+            _tcpClient = new TcpClient();
+            
+            _tcpClient.Connect(hostname, port);
+
+            _thread = new Thread(new ThreadStart(ProcessServerResponse));
+            _thread.Start();
+
+            //NicknamePacket nickNamePacket = new NicknamePacket("Bill");
+            //Send(nickNamePacket);
+            return true;
+        }
+
+        //----------------------------------------------------------------------------------
         public void Disconnect()
         {
             try
             {
-                _reader.Close();
-                _writer.Close();
-                _tcpClient.Close();
+                SysPacket SystemPacket = new SysPacket(name, " Has disconnected", SystemType.DISCONNECTED);
+                Send(SystemPacket);
+                //_reader.Close();
+                //_writer.Close();
+                this._tcpClient.Close();
                 _thread.Abort();
-                bReader.Close();
-                bWriter.Close();
-                
             }
-            catch {}
+            catch (Exception e)
+            {
+                _form.Invoke(new RecieveMessageDelegate(_form.AppendText), new object[] { "Error: " + e });
+            }
 
-            OutputText("Disconnected");
+            _form.Invoke(new RecieveMessageDelegate(_form.AppendText), new object[] { "Disconnected" });
         }
 
+        //----------------------------------------------------------------------------------
         private void ProcessServerResponse()
         {
             try
             {
-                while (_tcpClient.Connected)
-                {
-                    int noOfIncomingBytes;
-                    while ((noOfIncomingBytes = bReader.ReadInt32()) != 0)
+                _reader = new BinaryReader(_stream, Encoding.UTF8);
+            }
+
+            catch (ArgumentException e)
+            {
+
+            }
+
+            int noOfIncomingBytes;
+
+            try
+            {
+                //while (_tcpClient.Connected)
+                //{
+                    while ((noOfIncomingBytes = _reader.ReadInt32()) != 0)
                     {
-                        byte[] bytes = bReader.ReadBytes(noOfIncomingBytes);
+                        byte[] bytes = _reader.ReadBytes(noOfIncomingBytes);
                         MemoryStream memoryStream = new MemoryStream(bytes);
+                        BinaryFormatter formatter = new BinaryFormatter();
+
                         Packet packet = formatter.Deserialize(memoryStream) as Packet;
                         switch (packet.type)
                         {
-                                case PacketType.CHATMESSAGE: 
-                                string message = ((ChatMessagePacket)packet).chatMessage;
+                                case (PacketType.CHATMESSAGE): 
+                                    string message = ((ChatMessagePacket)packet).chatMessage;
 
-                                OutputText(message);
-                                   
-                                
-                                break;
+                                    _form.Invoke(new RecieveMessageDelegate(_form.AppendText), new object[] { message });                              
+                                    break;
+
+                            case (PacketType.CLIENTLIST):
+                                string[] clients = ((ClientList)packet).clients;
+                                _form.Invoke(new RecieveClientListDelegate(_form.UpdateClients), new object[] {clients});
+                                break; 
                         }
-                    }
+                    //}
                 }
             }
-            catch { }
+
+            catch (IOException e)
+            {
+            
+            }
+
+            catch (ObjectDisposedException e)
+            {
+
+            }
         }
 
-        private delegate void AppendTextDelegate(string str);
-        private void OutputText(string text)
-        {
-            _form.Invoke(new AppendTextDelegate(_form.AppendText), new object[] { text });
-        }
 
+        //----------------------------------------------------------------------------------
         public void Send(Packet data)
         {
             MemoryStream mem = new MemoryStream();
@@ -106,20 +151,31 @@ namespace ChatClient
             bf.Serialize(mem, data);
             byte[] buffer = mem.GetBuffer();
 
-            bWriter.Write(buffer.Length);
-            bWriter.Write(buffer);
-            bWriter.Flush();
+            try
+            {
+                _writer.Write(buffer.Length);
+                _writer.Write(buffer);
+                _writer.Flush();
+            }
+
+            catch (ObjectDisposedException e)
+            {
+
+            }
         }
 
-        public void SendTextPacket(string text)
+        //----------------------------------------------------------------------------------
+        public void SendTextPacket(string text, string sender)
         {
 
-            ChatMessagePacket chatMessagePacket = new ChatMessagePacket(text);
+            ChatMessagePacket chatMessagePacket = new ChatMessagePacket(text, sender);
             Send(chatMessagePacket);
         }
 
-        private void SetNickname(string nickname)
+        //----------------------------------------------------------------------------------
+        public void SetNickname(string nickname)
         {
+            name = nickname;
             NicknamePacket chatMessagePacket = new NicknamePacket(nickname);
             Send(chatMessagePacket);
         }

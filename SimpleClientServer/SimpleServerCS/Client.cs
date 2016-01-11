@@ -16,37 +16,34 @@ namespace SimpleServerCS
         public Socket Socket { get; private set; }
         public string ID { get; private set; }
         public NetworkStream Stream { get; private set; }
-        public StreamReader Reader { get; private set; }
-        public StreamWriter Writer { get; private set; }
-
         public BinaryReader bReader { get; private set; }
 
         public BinaryFormatter formatter { get; private set; }
         public BinaryWriter bWriter { get; private set; }
 
         private Thread thread;
-
-        public Client(Socket socket)
+        public string userName;
+        public Client(Socket socket, string name)
         {
             ID = Guid.NewGuid().ToString();
+            userName = name;
             Socket = socket;
 
             Stream = new NetworkStream(Socket, true);
-            Writer = new StreamWriter(Stream, Encoding.UTF8);
-            Reader = new StreamReader(Stream, Encoding.UTF8);
             bWriter = new BinaryWriter(Stream, Encoding.UTF8);
             bReader = new BinaryReader(Stream, Encoding.UTF8);
-            formatter = new BinaryFormatter();
+            
 
+            Console.WriteLine("Client Connected");           
         }
 
         public void Start()
         {
-            thread = new Thread(new ThreadStart(SocketMethod));
+            thread = new Thread(new ThreadStart(this.SocketMethod));
             thread.Start();
         }
 
-        public void Stop(bool abortThread = false)
+        public void Stop()
         {
             Socket.Close();
 
@@ -69,10 +66,26 @@ namespace SimpleServerCS
             bWriter.Write(buffer);
             bWriter.Flush();
         }
-        public void SendTextPacket(string text)
+        public void SendTextPacket(string text, string sender)
         {
-            ChatMessagePacket chatMessagePacket = new ChatMessagePacket(text);
+            ChatMessagePacket chatMessagePacket = new ChatMessagePacket(text, sender);
             Send(chatMessagePacket);
+        }
+
+        public void SetUsername(string name)
+        {
+            userName = name;
+        }
+
+        public string GetUsername()
+        {
+            return userName;
+        }
+
+        public void SendClientList(string[] clients)
+        {
+            ClientList clientList = new ClientList(clients);
+            Send(clientList);
         }
     }
 }

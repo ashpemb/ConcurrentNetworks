@@ -30,7 +30,7 @@ namespace SimpleServerCS
             while (true)
             {
                 Socket socket = _tcpListener.AcceptSocket();
-                Client client = new Client(socket);
+                Client client = new Client(socket, "User");
                 clients.Add(client);
                 client.Start();
             }
@@ -41,10 +41,11 @@ namespace SimpleServerCS
         {
             foreach (Client c in clients)
             {
-                c.Stop();
+                //c.Stop();
+                _tcpListener.Stop();
             }
 
-            _tcpListener.Stop();
+            
         }
 
 
@@ -56,31 +57,78 @@ namespace SimpleServerCS
                 Socket socket = client.Socket;
 
                 NetworkStream stream = client.Stream;
-                StreamReader reader = client.Reader;
                 BinaryReader bReader = client.bReader;
-                BinaryFormatter formatter = client.formatter;
-
-                client.SendTextPacket("Successfully Connected");
+                
+                
+                client.SendTextPacket("Successfully Connected", null);
 
                 int noOfIncomingBytes;
                     while ((noOfIncomingBytes = bReader.ReadInt32()) != 0)
                     {
                         byte[] bytes = bReader.ReadBytes(noOfIncomingBytes);
                         MemoryStream memoryStream = new MemoryStream(bytes);
+                        BinaryFormatter formatter = new BinaryFormatter();
                         Packet packet = formatter.Deserialize(memoryStream) as Packet;
                         switch (packet.type)
                         {
-                                case PacketType.CHATMESSAGE: 
-                                string message = ((ChatMessagePacket) packet).chatMessage;
+
+                                case (PacketType.NICKNAME):
+                                string name = ((NicknamePacket)packet).nickName;
+                                
+                                client.SetUsername(name);
+                                string[] clientList = clients.ConvertAll(c=>c.userName).ToArray();
+                                foreach (Client c in clients)
+                                {
+                                    if (c != null)
+                                    {
+                                        c.SendClientList(clientList);
+                                    }
+                                }
+
+                                break;
+
+                                case (PacketType.CHATMESSAGE):
+                                string sender = ((ChatMessagePacket)packet).sender;
+                                string message = sender + " : " + ((ChatMessagePacket) packet).chatMessage;
                                 Console.WriteLine(message);
                                 foreach (Client c in clients)
                                 {
                                     if (c != null)
                                     {
-                                        c.SendTextPacket(message);
+                                        c.SendTextPacket(message, sender);
                                     }
                                 }
                                 break;
+
+                            case (PacketType.SYSTEM):
+                                SysPacket systemPacket = ((SysPacket)packet);
+                                string sysMessage = systemPacket.message;
+                                if (systemPacket.sysType.Equals(SystemType.DISCONNECTED))
+                                {
+                                    sysMessage = "[System] " + client.userName + " " + sysMessage;
+                                    Client temp = null; 
+                                    foreach (Client c in clients)
+                                    {
+                                        if ( c.GetUsername().Equals(systemPacket.sender))
+                                        {
+                                            temp = c;
+                                        }
+                                    }
+
+                                    clients.Remove(temp);
+
+                                    String[] clients2 = clients.ConvertAll(con => con.userName).ToArray();
+                                    Console.WriteLine(sysMessage);
+
+                                    foreach (Client c in clients)
+                                    {
+                                        c.SendTextPacket(c.GetUsername(), sysMessage);
+                                        c.SendClientList(clients2);
+                                    }
+                                }
+                                break;
+                           
+
                         }
                     }
             }
